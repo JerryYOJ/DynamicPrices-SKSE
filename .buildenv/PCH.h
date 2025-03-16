@@ -53,6 +53,28 @@ protected:
     HookTemplate& operator=(HookTemplate&&) = delete;
 };
 
+class VmCallback : public RE::BSScript::IStackCallbackFunctor
+{
+public:
+    using OnResult = std::function<void(const RE::BSScript::Variable&)>;
+
+    static auto New(const OnResult& a_callback)
+    {
+        RE::BSTSmartPointer<RE::BSScript::IStackCallbackFunctor> res;
+        res.reset(new VmCallback(a_callback));
+        return res;
+    }
+private:
+    VmCallback(const OnResult& onResult_) :
+        onResult(onResult_) {}
+
+    void operator()(RE::BSScript::Variable result) override { onResult(result); }
+    bool CanSave() const override { return false; }
+    void SetObject(const RE::BSTSmartPointer<RE::BSScript::Object>&) override {}
+
+    const OnResult onResult;
+};
+
 #ifdef SKYRIM_AE
 #	define OFFSET(se, ae) ae
 #	define OFFSET_3(se, ae, vr) ae

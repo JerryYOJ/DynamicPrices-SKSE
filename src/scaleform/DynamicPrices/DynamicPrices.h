@@ -16,5 +16,6 @@ private:
 	std::unordered_map<RE::FormID, uint16_t>ItemLevelMap;
 	RE::BarterMenu* thiz;
 
-	static std::vector<std::pair<std::string, std::string >>CallbackMap;
+	static std::vector<std::pair<std::string, std::string >>NativeCallbackMap;
+	//static std::vector<std::pair<std::string, std::string >>PapyrusCallbackMap;
 };

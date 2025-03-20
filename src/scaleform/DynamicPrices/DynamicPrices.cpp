@@ -1,6 +1,7 @@
 #include "DynamicPrices.h"
 
 #include <future>
+#include <filesystem>
 
 #include "../../json.hpp"
 
@@ -16,49 +17,49 @@ void DynamicPrices::Install() {
 
 void DynamicPrices::InstallLate()
 {
-	auto cfg = std::ifstream("Data/SKSE/Plugins/DynamicPrices.json", std::ios::in);
-	if (!cfg.is_open()) {
-		logger::critical("Failed to open configuration file!");
-		return;
-	}
+	for (const auto& entry : std::filesystem::directory_iterator("Data/SKSE/DynamicPrices")) {
+		auto cfg = std::ifstream(entry.path().native(), std::ios::in);
+		if (cfg.is_open()) {
+			try {
+				auto json = nlohmann::json::parse(cfg);
+				auto ncb = json.value("NativeCallbacks", nlohmann::json::array());
+				for (auto&& cb : ncb) {
+					if (cb.is_string()) {
+						auto string = cb.get<std::string>();
+						auto&& ex_pos = string.find('!');
+						if (ex_pos != std::string::npos) {
+							auto module = string.substr(0, ex_pos);
+							auto func = string.substr(ex_pos + 1);
 
-	try {
-		auto json = nlohmann::json::parse(cfg);
-		auto ncb = json.value("NativeCallbacks", nlohmann::json::array());
-		for (auto&& cb : ncb) {
-			if (cb.is_string()) {
-				auto string = cb.get<std::string>();
-				auto&& ex_pos = string.find('!');
-				if (ex_pos != std::string::npos) {
-					auto module = string.substr(0, ex_pos);
-					auto func = string.substr(ex_pos + 1);
+							NativeCallbackMap.push_back({ module, func });
 
-					NativeCallbackMap.push_back({ module, func });
-
-					logger::info("Loaded NativeCallback {}.{}", module, func);
+							logger::info("Loaded NativeCallback {}.{}", module, func);
+						}
+					}
 				}
+
+				//auto pcb = json.value("PapyrusCallbacks", nlohmann::json::array());
+				//for (auto&& cb : pcb) {
+				//	if (cb.is_string()) {
+				//		auto string = cb.get<std::string>();
+				//		auto&& ex_pos = string.find('!');
+				//		if (ex_pos != std::string::npos) {
+				//			auto module = string.substr(0, ex_pos);
+				//			auto func = string.substr(ex_pos + 1);
+
+				//			PapyrusCallbackMap.push_back({ module, func });
+
+				//			logger::info("Loaded PapyrusCallback {}.{}", module, func);
+				//		}
+				//	}
+				//}
+			}
+			catch (const nlohmann::json::parse_error& e) {
+				logger::critical("JSON parse error: {}\nException id: {}\nByte position: {}\nFilename: {}", e.what(), e.id, e.byte, entry.path().string());
 			}
 		}
-
-		//auto pcb = json.value("PapyrusCallbacks", nlohmann::json::array());
-		//for (auto&& cb : pcb) {
-		//	if (cb.is_string()) {
-		//		auto string = cb.get<std::string>();
-		//		auto&& ex_pos = string.find('!');
-		//		if (ex_pos != std::string::npos) {
-		//			auto module = string.substr(0, ex_pos);
-		//			auto func = string.substr(ex_pos + 1);
-
-		//			PapyrusCallbackMap.push_back({ module, func });
-
-		//			logger::info("Loaded PapyrusCallback {}.{}", module, func);
-		//		}
-		//	}
-		//}
 	}
-	catch (const nlohmann::json::parse_error& e) {
-		logger::critical("JSON parse error: {}\nException id: {}\nByte position: {}", e.what(), e.id, e.byte);
-	}
+
 	return;
 }
 
@@ -95,7 +96,7 @@ void DynamicPrices::PostCreate(RE::BarterMenu* thiz) {
 			auto&& lev = obj->As<RE::TESLevItem>();
 
 			std::stack<LevIter> queued;
-			queued.push({ lev, 0 });
+			queued.push({ lev, 1 });
 			do {
 				auto iter = queued.top();
 				queued.pop();
@@ -106,8 +107,9 @@ void DynamicPrices::PostCreate(RE::BarterMenu* thiz) {
 						auto ll = form->As<RE::TESLevItem>();
 						if (ll) queued.push({ ll, std::max(iter.level, entry.level) });
 						else {
-							if (hashMap.contains(form->formID)) hashMap[form->formID] = entry.level < hashMap[form->formID] ? entry.level : hashMap[form->formID];
-							else hashMap[form->formID] = entry.level;
+							uint16_t level = std::max(iter.level, entry.level);
+							if (hashMap.contains(form->formID)) hashMap[form->formID] = level < hashMap[form->formID] ? level : hashMap[form->formID];
+							else hashMap[form->formID] = level;
 						}
 					}
 				}

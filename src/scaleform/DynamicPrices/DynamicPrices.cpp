@@ -147,38 +147,38 @@ void DynamicPrices::Call(Params& a_params) {
 		auto traderRef = *TraderRefhandle;
 		auto trader = RE::TESObjectREFR::LookupByHandle(traderRef)->As<RE::Actor>();
 
-		if (ItemLevelMap.contains(formID)) {
-			float mult = 1.0f;
+		int level = ItemLevelMap.contains(formID) ? ItemLevelMap.at(formID) : 0;
 
-			for (auto&& it : NativeCallbackMap) {
-				auto mod = GetModuleHandle(it.first.c_str());
-				auto cb = reinterpret_cast<_Callback>(GetProcAddress(mod, it.second.c_str()));
-				if(cb) mult *= cb(trader, thiz->GetRuntimeData().itemList->GetSelectedItem()->data.objDesc, ItemLevelMap.at(formID), a_updateObj, res.GetBool());
+		float mult = 1.0f;
+
+		for (auto&& it : NativeCallbackMap) {
+			auto mod = GetModuleHandle(it.first.c_str());
+			auto cb = reinterpret_cast<_Callback>(GetProcAddress(mod, it.second.c_str()));
+			if(cb) mult *= cb(trader, thiz->GetRuntimeData().itemList->GetSelectedItem()->data.objDesc, level, a_updateObj, res.GetBool());
 				
-				logger::debug("[Call] mod:{},{} cb:{},{}", it.first, (void*)mod, it.second, (void*)cb);
-			}
-			//for (auto&& it : PapyrusCallbackMap) {
-			//	auto&& vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
-			//	auto args = RE::MakeFunctionArguments();
-
-			//	std::promise<float> ret;
-			//	std::future<float> fut = ret.get_future();
-
-			//	auto callback = VmCallback::New([&ret](const RE::BSScript::Variable& a_var) {
-			//		ret.set_value(a_var.GetFloat());
-			//	});
-			//	vm->DispatchStaticCall(it.first, it.second, args, callback);
-
-			//	mult *= fut.get();
-
-			//	logger::debug("[Call] mod:{} cb:{} fut:{}", it.first, it.second, fut.get());
-			//}
-
-			RE::GFxValue value(RE::GFxValue::ValueType::kNumber);
-			a_updateObj.GetMember("value", &value);
-			value.SetNumber(value.GetNumber() * mult);
-			a_updateObj.SetMember("value", value);
+			logger::debug("[Call] mod:{},{} cb:{},{}", it.first, (void*)mod, it.second, (void*)cb);
 		}
+		//for (auto&& it : PapyrusCallbackMap) {
+		//	auto&& vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+		//	auto args = RE::MakeFunctionArguments();
+
+		//	std::promise<float> ret;
+		//	std::future<float> fut = ret.get_future();
+
+		//	auto callback = VmCallback::New([&ret](const RE::BSScript::Variable& a_var) {
+		//		ret.set_value(a_var.GetFloat());
+		//	});
+		//	vm->DispatchStaticCall(it.first, it.second, args, callback);
+
+		//	mult *= fut.get();
+
+		//	logger::debug("[Call] mod:{} cb:{} fut:{}", it.first, it.second, fut.get());
+		//}
+
+		RE::GFxValue value(RE::GFxValue::ValueType::kNumber);
+		a_updateObj.GetMember("value", &value);
+		value.SetNumber(value.GetNumber() * mult);
+		a_updateObj.SetMember("value", value);
 	}
 
 	oldFunc.Invoke("call", a_params.retVal, a_params.argsWithThisRef, a_params.argCount + 1);

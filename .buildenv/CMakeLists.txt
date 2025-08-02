@@ -37,7 +37,7 @@ if(DEFINED ENV{SKYRIM_MODS_FOLDER} AND IS_DIRECTORY "$ENV{SKYRIM_MODS_FOLDER}")
 endif()
 
 # Otherwise, you can set OUTPUT_FOLDER to any place you'd like :)
-set(OUTPUT_FOLDER "D:/Steamapp/steamapps/common/Skyrim Special Edition/MO2/mods/DynamicPrices")
+set(OUTPUT_FOLDER "D:/SteamLibrary/steamapps/common/Skyrim Special Edition/MO2/mods/DynamicPricesFramework")
 if(NOT EXISTS ${OUTPUT_FOLDER}) 
     set(OUTPUT_FOLDER "C:/Users/elain/AppData/Local/ModOrganizer/Skyrim Special Edition/mods/DynamicMerchant")
 endif()
